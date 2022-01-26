@@ -79,24 +79,30 @@ Site= "IDENT_Freiburg"
 Site= "IDENT_Macomer"
 Site= "Satakunta"
 
+climateData_path          <- paste0(mainDir,'/Input_parameters/ERA_land_sureau_PtsEx_daily/ERA_land_',Site  , '_1990-2020.csv')
+climate_data          <- create.climate.data(filePath = climateData_path, 
+                                             modeling_options = modeling_options,
+                                             simulation_parameters = simulation_parameters) #
 filename  = paste0(mainDir,'/scripts_base_simulations/OutPutMixForChange_',Site, '.csv')
 DATA      = read.csv(filename,header=T, dec='.', sep="")
 DATA$Time = as.POSIXct(DATA$Time,format='%Y-%m-%d/%H:%M:%S')
 Year = strftime(DATA$Time, format='%Y')
+DOY = strftime(DATA$Time, format='%j')
 
 SWS = DATA$SWS1+DATA$SWS2+DATA$SWS3
 REW = (SWS-soil_parameters$V_soil_storage_capacity_res)/(sum(soil_parameters$V_saturation_capacity)-soil_parameters$V_soil_storage_capacity_wilt)
 
-MinREW = tapply(REW, Year, min,na.rm=T)
+SWS_mean = tapply(SWS, DOY, min,na.rm=T)
 
 Pmin = tapply(DATA$Psi_LSym, Year, min,na.rm=T)
 PLCYear = tapply(DATA$PLC_Leaf, Year, max,na.rm=T)
 
-DATA[DATA]
-
-quartz()
-plot(Pmin~unique(na.omit(Year)), type='b', ylim=c(-5, -2), main = Site)
-abline(h=vegetation_parameters$P50_VC_Leaf)
+# quartz()
+# plot(Pmin~unique(na.omit(Year)), type='b', ylim=c(-5, -2), main = Site)
+# abline(h=vegetation_parameters$P50_VC_Leaf)
+# plot(SWS, type='l')
+# plot(DATA$Psi_LSym, type='l')
+# plot(Pmin, type='l')
 
 #-------------------
 MeanT = tapply(climate_data$Tair_mean,climate_data$DOY, mean)
@@ -104,10 +110,18 @@ MaxT = tapply(climate_data$Tair_max,climate_data$DOY, mean)
 MinT = tapply(climate_data$Tair_min,climate_data$DOY, mean)
 MeanRG = tapply(climate_data$RG_sum,climate_data$DOY, mean)
 
+RWC = SWS_mean/max(SWS_mean)
 quartz()
-par(mfrow=c(2,1), pty="s")
-plot(MeanT, type='l', ylim=c(-3, 30), ylab="temperature")
+par(mfrow=c(2,2), pty="s", las=1)
+plot(MeanT, type='l', ylim=c(-3, 30), ylab="temperature", main=Site)
 lines(MaxT, type='l', col=2)
 lines(MinT, type='l', col=4)
-
 plot(MeanRG, type='l', ylab="Radiation (MJ)", col="orange", lwd=2)
+par(new=T)
+plot(RWC, type='l', yaxt='n',ylab="", ylim=c(0.3,1), lwd=2)
+axis(4)
+mtext("RWC",4,2.5)
+plot(SWS, type='l')
+plot(Pmin, type='l')
+
+
